@@ -116,7 +116,7 @@ def map_studies_results():
     Maps studies to their respective targets.
     """
     id_to_results = dict()
-    train_csv = open('data/train.csv')
+    train_csv = open('/data/heart/train.csv')
     lines = train_csv.readlines()
     i = 0
     for item in lines:
@@ -137,7 +137,7 @@ def write_train_npy():
     print('Writing training data to .npy file...')
     print('-'*50)
 
-    study_ids, images = load_images('data/train')  # load images and their ids
+    study_ids, images = load_images('/data/heart/train')  # load images and their ids
     studies_to_results = map_studies_results()  # load the dictionary of studies to targets
     X = []
     y = []
@@ -151,8 +151,8 @@ def write_train_npy():
 
     X = np.array(X, dtype=np.uint8)
     y = np.array(y)
-    np.save('data/X_train.npy', X)
-    np.save('data/y_train.npy', y)
+    np.save('/data/heart/X_train.npy', X)
+    np.save('/data/heart/y_train.npy', y)
     print('Done.')
 
 
@@ -164,7 +164,7 @@ def write_validation_npy():
     print('Writing validation data to .npy file...')
     print('-'*50)
 
-    ids, images = load_images('data/validate')
+    ids, images = load_images('/data/heart/validate')
     study_ids = []
     X = []
 
@@ -175,10 +175,10 @@ def write_validation_npy():
             X.append(study[i, :, :, :])
 
     X = np.array(X, dtype=np.uint8)
-    np.save('data/X_validate.npy', X)
-    np.save('data/ids_validate.npy', study_ids)
+    np.save('/data/heart/X_validate.npy', X)
+    np.save('/data/heart/ids_validate.npy', study_ids)
     print('Done.')
 
 
-write_train_npy()
+#write_train_npy()
 write_validation_npy()

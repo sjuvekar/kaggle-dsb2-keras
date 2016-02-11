@@ -5,6 +5,9 @@ import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
 from model import get_model
+from model_vgg import get_vgg_model
+from model_alex import get_alex_model
+
 from utils import crps, real_to_cdf, preprocess, rotation_augmentation, shift_augmentation
 
 

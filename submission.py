@@ -11,8 +11,8 @@ def load_validation_data():
     """
     Load validation data from .npy files.
     """
-    X = np.load('data/X_validate.npy')
-    ids = np.load('data/ids_validate.npy')
+    X = np.load('/data/heart/X_validate.npy')
+    ids = np.load('/data/heart/ids_validate.npy')
 
     X = X.astype(np.float32)
     X /= 255

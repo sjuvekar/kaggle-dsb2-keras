@@ -15,7 +15,7 @@ def center_normalize(x):
     return (x - K.mean(x)) / K.std(x)
 
 
-def get_model():
+def get_vgg_model():
     model = Sequential()
     model.add(ZeroPadding2D((1,1),input_shape=(3,224,224)))
     model.add(Convolution2D(64, 3, 3, activation='relu'))

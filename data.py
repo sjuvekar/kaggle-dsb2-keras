@@ -180,5 +180,5 @@ def write_validation_npy():
     print('Done.')
 
 
-#write_train_npy()
+write_train_npy()
 write_validation_npy()

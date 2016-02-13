@@ -4,6 +4,8 @@ import csv
 import numpy as np
 
 from model import get_model
+from model_vgg import get_vgg_model
+from model_alex import get_alex_model
 from utils import real_to_cdf, preprocess
 
 
@@ -46,8 +48,8 @@ def submission():
     Generate submission file for the trained models.
     """
     print('Loading and compiling models...')
-    model_systole = get_model()
-    model_diastole = get_model()
+    model_systole = get_vgg_model()
+    model_diastole = get_vgg_model()
 
     print('Loading models weights...')
     model_systole.load_weights('weights_systole_best.hdf5')
@@ -79,7 +81,7 @@ def submission():
 
     # write to submission file
     print('Writing submission to file...')
-    fi = csv.reader(open('data/sample_submission_validate.csv'))
+    fi = csv.reader(open('/data/heart/sample_submission_validate.csv'))
     f = open('submission.csv', 'w')
     fo = csv.writer(f, lineterminator='\n')
     fo.writerow(fi.next())

@@ -3,7 +3,7 @@ from __future__ import print_function
 from keras.models import Sequential
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
 from keras.layers.core import Activation, Dense, Flatten, Dropout
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 from keras.regularizers import l2
 from keras import backend as K
 
@@ -17,6 +17,8 @@ def center_normalize(x):
 
 def get_alex_model():
     model = Sequential()
+    model.add(Activation(activation=center_normalize, input_shape=(30, 64, 64)))
+
     model.add(Convolution2D(64, 3, 11, 11, border_mode='full'))
     model.add(BatchNormalization((64,226,226)))
     model.add(Activation('relu'))
@@ -44,11 +46,11 @@ def get_alex_model():
     model.add(Dense(4096, 4096, init='normal'))
     model.add(BatchNormalization(4096))
     model.add(Activation('relu'))
-    model.add(Dense(4096, 1000, init='normal'))
-    model.add(BatchNormalization(1000))
+    model.add(Dense(4096, 1, init='normal'))
+    model.add(BatchNormalization(1))
     model.add(Activation('softmax'))
     
-    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss='rmse')
     return model
 

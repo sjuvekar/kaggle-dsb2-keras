@@ -52,8 +52,8 @@ def train():
     Training systole and diastole models.
     """
     print('Loading and compiling models...')
-    model_systole = get_model()
-    model_diastole = get_model()
+    model_systole = get_vgg_model()
+    model_diastole = get_vgg_model()
 
     print('Loading training data...')
     X, y = load_train_data()

@@ -3,6 +3,7 @@ from __future__ import print_function
 from keras.models import Sequential
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
 from keras.layers.core import Activation, Dense, Flatten, Dropout
+from keras.layers.advanced_activations import LeakyReLU
 from keras.optimizers import Adam, SGD
 from keras.regularizers import l2
 from keras import backend as K
@@ -20,39 +21,52 @@ def get_vgg_model():
     model.add(Activation(activation=center_normalize, input_shape=(30, 64, 64)))
 
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(64, 3, 3, activation='relu'))
+    model.add(Convolution2D(64, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(64, 3, 3, activation='relu'))
+    model.add(Convolution2D(64, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(MaxPooling2D((2,2), strides=(2,2)))
 
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(128, 3, 3, activation='relu'))
+    model.add(Convolution2D(128, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(128, 3, 3, activation='relu'))
+    model.add(Convolution2D(128, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(MaxPooling2D((2,2), strides=(2,2)))
 
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(256, 3, 3, activation='relu'))
+    model.add(Convolution2D(256, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(256, 3, 3, activation='relu'))
+    model.add(Convolution2D(256, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(256, 3, 3, activation='relu'))
+    model.add(Convolution2D(256, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(MaxPooling2D((2,2), strides=(2,2)))
 
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(Convolution2D(512, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(Convolution2D(512, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(Convolution2D(512, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(MaxPooling2D((2,2), strides=(2,2)))
 
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(Convolution2D(512, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(Convolution2D(512, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(ZeroPadding2D((1,1)))
-    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(Convolution2D(512, 3, 3, activation='linear'))
+    model.add(LeakyReLU(alpha=.001))
     model.add(MaxPooling2D((2,2), strides=(2,2)))
 
     model.add(Flatten())

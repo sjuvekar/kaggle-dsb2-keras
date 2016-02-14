@@ -8,7 +8,6 @@ from model_vgg import get_vgg_model
 from model_alex import get_alex_model
 from utils import real_to_cdf, preprocess, rotation_augmentation, shift_augmentation
 
-
 def load_validation_data():
     """
     Load validation data from .npy files.
@@ -85,7 +84,7 @@ def submission():
 
     # real predictions to CDF
     pred_systole = pred_systole / (num_aug_iter + 1.)
-    pred_diastole = pred_diastole / (num_aug_ier + 1.)
+    pred_diastole = pred_diastole / (num_aug_iter + 1.)
     print (pred_systole.sum(axis=1), pred_diastole.sum(axis=1))
     cdf_pred_systole = real_to_cdf(pred_systole, val_loss_systole)
     cdf_pred_diastole = real_to_cdf(pred_diastole, val_loss_diastole)

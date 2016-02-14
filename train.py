@@ -3,6 +3,7 @@ from __future__ import print_function
 import sys
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
+from keras.callbacks import ModelCheckpoint, Callback
 
 from model import get_model
 from model_vgg import get_vgg_model
@@ -10,13 +11,28 @@ from model_alex import get_alex_model
 
 from utils import crps, real_to_cdf, preprocess, rotation_augmentation, shift_augmentation
 
+class ValidationLossLogger(Callback):
+    def __init__(self):
+        Callback.__init__(self)
+        self.min_val_loss = sys.float_info.max 
+    
+    def on_train_begin(self, logs={}):
+        pass
 
-def load_train_data():
+    def on_batch_end(self, batch, logs={}):
+        cur_loss = logs.get('val_loss')
+        print('Current Validation Loss = ', cur_loss)
+        if cur_loss < self.min_val_loss:
+            self.min_val_loss = cur_loss
+            print('Found lower Validation loss: ', self.min_val_loss)
+
+
+def load_train_data(train_prefix_dir="/data/heart"):
     """
     Load training data from .npy files.
     """
-    X = np.load('/data/heart/X_train.npy')
-    y = np.load('/data/heart/y_train.npy')
+    X = np.load(train_prefix_dir + '/X_train.npy')
+    y = np.load(train_prefix_dir + '/y_train.npy')
 
     X = X.astype(np.float32)
     X /= 255
@@ -47,7 +63,7 @@ def split_data(X, y, split_ratio=0.2):
     return X_train, y_train, X_test, y_test
 
 
-def train():
+def train(train_prefix_dir="/data/heart"):
     """
     Training systole and diastole models.
     """
@@ -56,7 +72,7 @@ def train():
     model_diastole = get_vgg_model()
 
     print('Loading training data...')
-    X, y = load_train_data()
+    X, y = load_train_data(train_prefix_dir)
 
     print('Pre-processing images...')
     X = preprocess(X)
@@ -69,14 +85,84 @@ def train():
     batch_size = 32
     calc_crps = 1  # calculate CRPS every n-th iteration (set to 0 if CRPS estimation is not needed)
 
-    # remember min val. losses (best iterations), used as sigmas for submission
-    min_val_loss_systole = sys.float_info.max
-    min_val_loss_diastole = sys.float_info.max
-
     print('-'*50)
     print('Training...')
     print('-'*50)
 
+    # Create Image Augmentation
+    datagen = ImageDataGenerator(
+        featurewise_center=False,  # set input mean to 0 over the dataset
+        samplewise_center=False,  # set each sample mean to 0
+        featurewise_std_normalization=False,  # divide inputs by std of the dataset
+        samplewise_std_normalization=False,  # divide each input by its std
+        zca_whitening=False,  # apply ZCA whitening
+        rotation_range=15,  # randomly rotate images in the range (degrees, 0 to 180)
+        width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
+        height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+        horizontal_flip=True,  # randomly flip images
+        vertical_flip=True)  # randomly flip images
+
+    # compute quantities required for featurewise normalization
+    # (std, mean, and principal components if ZCA whitening is applied)
+    datagen.fit(X_train)
+
+    # Create model checkpointers for systole and diastole
+    systole_checkpointer_best = ModelCheckpoint(filepath="weights_systole_best.hdf5", verbose=1, save_best_only=True)
+    diastole_checkpointer_best = ModelCheckpoint(filepath="weights_diastole_best.hdf5", verbose=1, save_best_only=True)
+    systole_checkpointer = ModelCheckpoint(filepath="weights_systole.hdf5", verbose=1, save_best_only=False)
+    diastole_checkpointer = ModelCheckpoint(filepath="weights_diastole.hdf5", verbose=1, save_best_only=False)
+
+    # Create a logger for loss
+    systole_loss_logger = ValidationLossLogger()
+    diastole_loss_logger = ValidationLossLogger()
+
+    print('Fitting Systole Shapes')
+    hist_systole = model_systole.fit_generator(datagen.flow(X_train, y_train[:, 0], batch_size=batch_size),
+                                               samples_per_epoch=X_train.shape[0],
+                                               nb_epoch=nb_iter, show_accuracy=False,
+                                               validation_data=(X_test, y_test[:, 0]),
+                                               callbacks=[systole_checkpointer, systole_checkpointer_best, systole_loss_logger],
+                                               nb_worker=1)
+    
+    hist_diastole = model_diastole.fit_generator(datagen.flow(X_train, y_train[:, 1], batch_size=batch_size),
+                                                 samples_per_epoch=X_train.shape[0],
+                                                 nb_epoch=nb_iter, show_accuracy=False,
+                                                 validation_data=(X_test, y_test[:, 1]),
+                                                 callbacks=[diastole_checkpointer, diastole_checkpointer_best, diastole_loss_logger],
+                                                 nb_worker=1)
+    
+    if calc_crps > 0 and i % calc_crps == 0:
+        print('Evaluating CRPS...')
+        pred_systole = model_systole.predict(X_train, batch_size=batch_size, verbose=1)
+        pred_diastole = model_diastole.predict(X_train, batch_size=batch_size, verbose=1)
+        val_pred_systole = model_systole.predict(X_test, batch_size=batch_size, verbose=1)
+        val_pred_diastole = model_diastole.predict(X_test, batch_size=batch_size, verbose=1)
+
+        # CDF for train and test data (actually a step function)
+        cdf_train = real_to_cdf(np.concatenate((y_train[:, 0], y_train[:, 1])))
+        cdf_test = real_to_cdf(np.concatenate((y_test[:, 0], y_test[:, 1])))
+
+        # CDF for predicted data
+        cdf_pred_systole = real_to_cdf(pred_systole, loss_systole)
+        cdf_pred_diastole = real_to_cdf(pred_diastole, loss_diastole)
+        cdf_val_pred_systole = real_to_cdf(val_pred_systole, val_loss_systole)
+        cdf_val_pred_diastole = real_to_cdf(val_pred_diastole, val_loss_diastole)
+
+        # evaluate CRPS on training data
+        crps_train = crps(cdf_train, np.concatenate((cdf_pred_systole, cdf_pred_diastole)))
+        print('CRPS(train) = {0}'.format(crps_train))
+
+        # evaluate CRPS on test data
+        crps_test = crps(cdf_test, np.concatenate((cdf_val_pred_systole, cdf_val_pred_diastole)))
+        print('CRPS(test) = {0}'.format(crps_test))
+
+    # save best (lowest) val losses in file (to be later used for generating submission)
+    with open('val_loss.txt', mode='w+') as f:
+        f.write(str(systole_loss_logger.min_val_loss))
+        f.write('\n')
+        f.write(str(diastole_loss_logger.min_val_loss))
+        
+    """
     for i in range(nb_iter):
         print('-'*50)
         print('Iteration {0}/{1}'.format(i + 1, nb_iter))
@@ -139,12 +225,12 @@ def train():
         if val_loss_diastole < min_val_loss_diastole:
             min_val_loss_diastole = val_loss_diastole
             model_diastole.save_weights('weights_diastole_best.hdf5', overwrite=True)
-
+        
         # save best (lowest) val losses in file (to be later used for generating submission)
         with open('val_loss.txt', mode='w+') as f:
             f.write(str(min_val_loss_systole))
             f.write('\n')
             f.write(str(min_val_loss_diastole))
+        """
 
-
-train()
+train(sys.argv[1])

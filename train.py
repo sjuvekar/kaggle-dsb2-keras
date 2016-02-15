@@ -16,10 +16,7 @@ class ValidationLossLogger(Callback):
         Callback.__init__(self)
         self.min_val_loss = sys.float_info.max 
     
-    def on_train_begin(self, logs={}):
-        pass
-
-    def on_batch_end(self, batch, logs={}):
+    def on_epoch_end(self, epoch, logs={}):
         cur_loss = logs.get('val_loss')
         print('Current Validation Loss = ', cur_loss)
         if cur_loss < self.min_val_loss:
@@ -124,14 +121,20 @@ def train(train_prefix_dir="/data/heart"):
                                                callbacks=[systole_checkpointer, systole_checkpointer_best, systole_loss_logger],
                                                nb_worker=1)
     
+    print('Fitting Diastole Shapes')
     hist_diastole = model_diastole.fit_generator(datagen.flow(X_train, y_train[:, 1], batch_size=batch_size),
                                                  samples_per_epoch=X_train.shape[0],
                                                  nb_epoch=nb_iter, show_accuracy=False,
                                                  validation_data=(X_test, y_test[:, 1]),
                                                  callbacks=[diastole_checkpointer, diastole_checkpointer_best, diastole_loss_logger],
                                                  nb_worker=1)
-    
-    if calc_crps > 0 and i % calc_crps == 0:
+   
+    loss_systole = hist_systole.history['loss'][-1]
+    loss_diastole = hist_diastole.history['loss'][-1]
+    val_loss_systole = hist_systole.history['val_loss'][-1]
+    val_loss_diastole = hist_diastole.history['val_loss'][-1]
+
+    if calc_crps > 0:
         print('Evaluating CRPS...')
         pred_systole = model_systole.predict(X_train, batch_size=batch_size, verbose=1)
         pred_diastole = model_diastole.predict(X_train, batch_size=batch_size, verbose=1)

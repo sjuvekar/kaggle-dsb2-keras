@@ -17,11 +17,11 @@ def center_normalize(x):
     return (x - K.mean(x)) / K.std(x)
 
 def crps_loss(y_true, y_pred):
-    y_pred /= y_pred.sum(axis=-1, keepdims=True)
     # avoid numerical instability with _EPSILON clipping
     y_pred = T.clip(y_pred, K.common._EPSILON, 1.0 - K.common._EPSILON)
+    y_pred /= y_pred.sum(axis=-1, keepdims=True)
     y_pred = T.extra_ops.cumsum(y_pred, axis=-1)
-    return T.mean(T.sqr(y_pred - y_true), axis=-1)
+    return K.mean(K.square(y_pred - y_true), axis=None)
 
 def get_vgg_model():
     model = Sequential()
@@ -84,7 +84,7 @@ def get_vgg_model():
     model.add(Dense(600))
     model.add(Activation('softmax'))
 
-    sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss=globals()['crps_loss'])
+    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(optimizer=sgd, loss=crps_loss)#globals()['crps_loss'])
     return model
 

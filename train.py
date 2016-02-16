@@ -8,7 +8,6 @@ from keras.callbacks import ModelCheckpoint, Callback
 from model import get_model
 from model_vgg import get_vgg_model
 from model_alex import get_alex_model
-import pdb
 
 from utils import crps, real_to_cdf, preprocess, rotation_augmentation, shift_augmentation
 
@@ -61,7 +60,7 @@ def train(train_prefix_dir="/data/heart"):
     X, y = load_train_data(train_prefix_dir)
 
     print('Pre-processing images...')
-    #X = preprocess(X)
+    X = preprocess(X)
 
     # split to training and test
     X_train, y_train, X_test, y_test = split_data(X, y, split_ratio=0.2)
@@ -104,7 +103,6 @@ def train(train_prefix_dir="/data/heart"):
     y_diast_train = np.array([(i < np.arange(600)) for i in y_train[:, 1]], dtype=np.uint8)
     y_diast_test = np.array([(i < np.arange(600)) for i in y_test[:, 1]], dtype=np.uint8)
 
-    pdb.set_trace()
     print('Fitting Systole Shapes')
     hist_systole = model_systole.fit_generator(datagen.flow(X_train, y_syst_train[:, 0], batch_size=batch_size),
                                                samples_per_epoch=X_train.shape[0],

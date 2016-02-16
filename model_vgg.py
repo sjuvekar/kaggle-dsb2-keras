@@ -8,6 +8,7 @@ from keras.optimizers import Adam, SGD
 from keras.regularizers import l2
 from keras import backend as K
 
+from theano import tensor as T
 
 def center_normalize(x):
     """
@@ -15,6 +16,12 @@ def center_normalize(x):
     """
     return (x - K.mean(x)) / K.std(x)
 
+def crps_loss(y_true, y_pred):
+    y_pred = y_pred.sum(axis=-1, keepdims=True)
+    # avoid numerical instability with _EPSILON clipping
+    y_pred = T.clip(y_pred, K.common._EPSILON, 1.0 - K.common._EPSILON)
+    y_pred = T.extra_ops.cumsum(y_pred, axis=-1)
+    return T.mean(T.sqr(y_pred - y_true), axis=-1)
 
 def get_vgg_model():
     model = Sequential()
@@ -74,9 +81,10 @@ def get_vgg_model():
     model.add(Dropout(0.5))
     model.add(Dense(4096, activation='relu', W_regularizer=l2(1e-3)))
     model.add(Dropout(0.5))
-    model.add(Dense(1))
+    model.add(Dense(600))
+    model.add(Activation('softmax'))
 
     sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss='rmse')
+    model.compile(optimizer=sgd, loss=globals()['crps_loss'])
     return model
 

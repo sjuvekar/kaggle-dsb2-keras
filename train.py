@@ -11,18 +11,6 @@ from model_alex import get_alex_model
 
 from utils import crps, real_to_cdf, preprocess, rotation_augmentation, shift_augmentation
 
-class ValidationLossLogger(Callback):
-    def __init__(self):
-        Callback.__init__(self)
-        self.min_val_loss = sys.float_info.max 
-    
-    def on_epoch_end(self, epoch, logs={}):
-        cur_loss = logs.get('val_loss')
-        print('Current Validation Loss = ', cur_loss)
-        if cur_loss < self.min_val_loss:
-            self.min_val_loss = cur_loss
-            print('Found lower Validation loss: ', self.min_val_loss)
-
 
 def load_train_data(train_prefix_dir="/data/heart"):
     """
@@ -109,24 +97,26 @@ def train(train_prefix_dir="/data/heart"):
     systole_checkpointer = ModelCheckpoint(filepath="weights_systole.hdf5", verbose=1, save_best_only=False)
     diastole_checkpointer = ModelCheckpoint(filepath="weights_diastole.hdf5", verbose=1, save_best_only=False)
 
-    # Create a logger for loss
-    systole_loss_logger = ValidationLossLogger()
-    diastole_loss_logger = ValidationLossLogger()
+    # Create 600-dimentional y cdfs from observations
+    y_syst_train = np.array([(i < np.arange(600)) for i in y_train[:, 0]], dtype=np.uint8)
+    y_syst_test = np.array([(i < np.arange(600)) for i in y_test[:, 0]], dtype=np.uint8)
+    y_diast_train = np.array([(i < np.arange(600)) for i in y_train[:, 1]], dtype=np.uint8)
+    y_diast_test = np.array([(i < np.arange(600)) for i in y_train[:, 1]], dtype=np.uint8)
 
     print('Fitting Systole Shapes')
-    hist_systole = model_systole.fit_generator(datagen.flow(X_train, y_train[:, 0], batch_size=batch_size),
+    hist_systole = model_systole.fit_generator(datagen.flow(X_train, y_syst_train[:, 0], batch_size=batch_size),
                                                samples_per_epoch=X_train.shape[0],
                                                nb_epoch=nb_iter, show_accuracy=False,
-                                               validation_data=(X_test, y_test[:, 0]),
-                                               callbacks=[systole_checkpointer, systole_checkpointer_best, systole_loss_logger],
+                                               validation_data=(X_test, y_syst_test[:, 0]),
+                                               callbacks=[systole_checkpointer, systole_checkpointer_best],
                                                nb_worker=1)
     
     print('Fitting Diastole Shapes')
-    hist_diastole = model_diastole.fit_generator(datagen.flow(X_train, y_train[:, 1], batch_size=batch_size),
+    hist_diastole = model_diastole.fit_generator(datagen.flow(X_train, y_diast_train[:, 1], batch_size=batch_size),
                                                  samples_per_epoch=X_train.shape[0],
                                                  nb_epoch=nb_iter, show_accuracy=False,
-                                                 validation_data=(X_test, y_test[:, 1]),
-                                                 callbacks=[diastole_checkpointer, diastole_checkpointer_best, diastole_loss_logger],
+                                                 validation_data=(X_test, y_diast_test[:, 1]),
+                                                 callbacks=[diastole_checkpointer, diastole_checkpointer_best],
                                                  nb_worker=1)
    
     loss_systole = hist_systole.history['loss'][-1]
@@ -161,9 +151,9 @@ def train(train_prefix_dir="/data/heart"):
 
     # save best (lowest) val losses in file (to be later used for generating submission)
     with open('val_loss.txt', mode='w+') as f:
-        f.write(str(systole_loss_logger.min_val_loss))
+        f.write(str(min(hist_systole.history['val_loss'][-1])))
         f.write('\n')
-        f.write(str(diastole_loss_logger.min_val_loss))
+        f.write(str(min(hist_diastole.history['loss'][-1])))
         
     """
     for i in range(nb_iter):

@@ -84,7 +84,7 @@ def get_vgg_model():
     model.add(Dense(600))
     model.add(Activation('softmax'))
 
-    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=0.005, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss=crps_loss)#globals()['crps_loss'])
     return model
 

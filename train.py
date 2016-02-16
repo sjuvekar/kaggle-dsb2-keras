@@ -68,7 +68,7 @@ def train(train_prefix_dir="/data/heart"):
     nb_iter = 200
     epochs_per_iter = 1
     batch_size = 32
-    calc_crps = 1  # calculate CRPS every n-th iteration (set to 0 if CRPS estimation is not needed)
+    calc_crps = 0  # calculate CRPS every n-th iteration (set to 0 if CRPS estimation is not needed)
 
     print('-'*50)
     print('Training...')
@@ -151,9 +151,9 @@ def train(train_prefix_dir="/data/heart"):
 
     # save best (lowest) val losses in file (to be later used for generating submission)
     with open('val_loss.txt', mode='w+') as f:
-        f.write(str(min(hist_systole.history['val_loss'][-1])))
+        f.write(str(min(hist_systole.history['val_loss'])))
         f.write('\n')
-        f.write(str(min(hist_diastole.history['loss'][-1])))
+        f.write(str(min(hist_diastole.history['val_loss'])))
         
     """
     for i in range(nb_iter):

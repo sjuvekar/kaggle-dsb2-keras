@@ -17,7 +17,7 @@ def center_normalize(x):
     return (x - K.mean(x)) / K.std(x)
 
 def crps_loss(y_true, y_pred):
-    y_pred = y_pred.sum(axis=-1, keepdims=True)
+    y_pred /= y_pred.sum(axis=-1, keepdims=True)
     # avoid numerical instability with _EPSILON clipping
     y_pred = T.clip(y_pred, K.common._EPSILON, 1.0 - K.common._EPSILON)
     y_pred = T.extra_ops.cumsum(y_pred, axis=-1)

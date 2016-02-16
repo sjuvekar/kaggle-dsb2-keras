@@ -104,18 +104,18 @@ def train(train_prefix_dir="/data/heart"):
     y_diast_test = np.array([(i < np.arange(600)) for i in y_test[:, 1]], dtype=np.uint8)
 
     print('Fitting Systole Shapes')
-    hist_systole = model_systole.fit_generator(datagen.flow(X_train, y_syst_train[:, 0], batch_size=batch_size),
+    hist_systole = model_systole.fit_generator(datagen.flow(X_train, y_syst_train, batch_size=batch_size),
                                                samples_per_epoch=X_train.shape[0],
                                                nb_epoch=nb_iter, show_accuracy=False,
-                                               validation_data=(X_test, y_syst_test[:, 0]),
+                                               validation_data=(X_test, y_syst_test),
                                                callbacks=[systole_checkpointer, systole_checkpointer_best],
                                                nb_worker=1)
     
     print('Fitting Diastole Shapes')
-    hist_diastole = model_diastole.fit_generator(datagen.flow(X_train, y_diast_train[:, 1], batch_size=batch_size),
+    hist_diastole = model_diastole.fit_generator(datagen.flow(X_train, y_diast_train, batch_size=batch_size),
                                                  samples_per_epoch=X_train.shape[0],
                                                  nb_epoch=nb_iter, show_accuracy=False,
-                                                 validation_data=(X_test, y_diast_test[:, 1]),
+                                                 validation_data=(X_test, y_diast_test),
                                                  callbacks=[diastole_checkpointer, diastole_checkpointer_best],
                                                  nb_worker=1)
    

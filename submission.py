@@ -55,11 +55,6 @@ def submission():
     model_systole.load_weights('weights_systole_best.hdf5')
     model_diastole.load_weights('weights_diastole_best.hdf5')
 
-    # load val losses to use as sigmas for CDF
-    with open('val_loss.txt', mode='r') as f:
-        val_loss_systole = float(f.readline())
-        val_loss_diastole = float(f.readline())
-
     print('Loading validation data...')
     X, ids = load_validation_data()
 
@@ -72,8 +67,8 @@ def submission():
     pred_diastole = model_diastole.predict(X, batch_size=batch_size, verbose=1)
 
     # real predictions to CDF
-    cdf_pred_systole = real_to_cdf(pred_systole, val_loss_systole)
-    cdf_pred_diastole = real_to_cdf(pred_diastole, val_loss_diastole)
+    cdf_pred_systole = pred_systole.cumsum(axis=-1) 
+    cdf_pred_diastole = pred_diastole.cumsum(axis=-1)
 
     print('Accumulating results...')
     sub_systole = accumulate_study_results(ids, cdf_pred_systole)

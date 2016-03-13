@@ -3,6 +3,7 @@ from __future__ import print_function
 import os
 import numpy as np
 import dicom
+import random
 from scipy.misc import imresize
 
 img_resize = True
@@ -27,10 +28,10 @@ def crop_resize(img):
     return img
 
 
-def load_images(from_dir, verbose=True):
+def load_images(from_dir, batch_size=30, is_train=True, verbose=True):
     """
     Load images in the form study x slices x width x height.
-    Each image contains 30 time series frames so that it is ready for the convolutional network.
+    Each image contains batch_size time series frames so that it is ready for the convolutional network.
 
     :param from_dir: directory with images (train or validate)
     :param verbose: if true then print data
@@ -45,13 +46,13 @@ def load_images(from_dir, verbose=True):
     ids = []  # keeps the ids of the studies
     study_to_images = dict()  # dictionary for studies to images
     total = 0
-    images = []  # saves 30-frame-images
+    images = []  # saves batch_size-frame-images
     from_dir = from_dir if from_dir.endswith('/') else from_dir + '/'
     for subdir, _, files in os.walk(from_dir):
         subdir = subdir.replace('\\', '/')  # windows path fix
         subdir_split = subdir.split('/')
         study_id = subdir_split[-3]
-        if "sax" in subdir:
+        if "sax" in subdir or "ch" in subdir:
             for f in files:
                 image_path = os.path.join(subdir, f)
                 if not image_path.endswith('.dcm'):
@@ -66,24 +67,35 @@ def load_images(from_dir, verbose=True):
                 if current_study_sub != subdir:
                     x = 0
                     try:
-                        while len(images) < 30:
+                        while len(images) % batch_size != 0:
                             images.append(images[x])
                             x += 1
-                        if len(images) > 30:
-                            images = images[0:30]
+                        if len(images) > batch_size and not is_train:
+                            images = images[0:batch_size]
 
                     except IndexError:
                         pass
+                    
                     current_study_sub = subdir
-                    current_study_images.append(images)
+                    if is_train and len(images) > batch_size:
+                      random.shuffle(images)
+                      #print(current_study, ":", current_study_sub, ": found > ", batch_size, "images")
+                      for i in range(0, len(images), batch_size):
+                        current_study_images.append(images[i:i+batch_size])
+                    else:
+                      current_study_images.append(images)
+
                     images = []
 
                 if current_study != study_id:
-                    study_to_images[current_study] = np.array(current_study_images)
                     if current_study != "":
+                        study_to_images[current_study] = np.array(current_study_images)
                         ids.append(current_study)
+                        print ("Current_study = ", current_study, "Size = ", study_to_images[current_study].shape)
+                        print ("Total Size of studies = ", sum(map(lambda a: a.shape[0], study_to_images.values())))
                     current_study = study_id
                     current_study_images = []
+                
                 images.append(image)
                 if verbose:
                     if total % 1000 == 0:
@@ -91,11 +103,11 @@ def load_images(from_dir, verbose=True):
                 total += 1
     x = 0
     try:
-        while len(images) < 30:
+        while len(images) % batch_size != 0:
             images.append(images[x])
             x += 1
-        if len(images) > 30:
-            images = images[0:30]
+        if len(images) > batch_size and not is_train:
+            images = images[0:batch_size]
     except IndexError:
         pass
 
@@ -103,10 +115,16 @@ def load_images(from_dir, verbose=True):
     print('All DICOM in {0} images loaded.'.format(from_dir))
     print('-'*50)
 
-    current_study_images.append(images)
+    if is_train and len(images) > batch_size:
+      random.shuffle(images)
+      #print(current_study, ":", current_study_sub, ": found > ", batch_size, "images")
+      for i in range(0, len(images), batch_size):
+        current_study_images.append(images[i:i+batch_size])
+    else:
+      current_study_images.append(images)
+    
     study_to_images[current_study] = np.array(current_study_images)
-    if current_study != "":
-        ids.append(current_study)
+    ids.append(current_study)
 
     return ids, study_to_images
 

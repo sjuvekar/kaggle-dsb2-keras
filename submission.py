@@ -13,8 +13,8 @@ def load_validation_data():
     """
     Load validation data from .npy files.
     """
-    X = np.load('/data/heart/X_validate.npy')
-    ids = np.load('/data/heart/ids_validate.npy')
+    X = np.load('/data/heart/final/X_validate.npy')
+    ids = np.load('/data/heart/final/ids_validate.npy')
 
     X = X.astype(np.float32)
     X /= 255
@@ -76,7 +76,7 @@ def submission():
 
     # write to submission file
     print('Writing submission to file...')
-    fi = csv.reader(open('/data/heart/sample_submission_validate.csv'))
+    fi = csv.reader(open('/data/heart/sample_submission_test.csv'))
     f = open('submission.csv', 'w')
     fo = csv.writer(f, lineterminator='\n')
     fo.writerow(fi.next())

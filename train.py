@@ -16,8 +16,8 @@ def load_train_data(train_prefix_dir="/data/heart"):
     """
     Load training data from .npy files.
     """
-    X = np.load(train_prefix_dir + '/X_train.npy')
-    y = np.load(train_prefix_dir + '/y_train.npy')
+    X = np.load('/data/heart/final/X_train.npy')
+    y = np.load('/data/heart/final/y_train.npy')
 
     X = X.astype(np.float32)
     X /= 255
@@ -68,7 +68,11 @@ def train(train_prefix_dir="/data/heart"):
     nb_iter = 200
     epochs_per_iter = 1
     batch_size = 32
-    calc_crps = 0  # calculate CRPS every n-th iteration (set to 0 if CRPS estimation is not needed)
+    calc_crps = 1  # calculate CRPS every n-th iteration (set to 0 if CRPS estimation is not needed)
+
+    # remember min val. losses (best iterations), used as sigmas for submission
+    min_val_loss_systole = sys.float_info.max
+    min_val_loss_diastole = sys.float_info.max
 
     print('-'*50)
     print('Training...')
